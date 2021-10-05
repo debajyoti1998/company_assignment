@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+      <button onclick="prev()">Previous</button>
+      <button onclick="next()">Next</button>
+
+    <h2>10 received data</h2>
+    <pre id="ten_data"></pre>
+
+    <h2>10 received data ids</h2>
+    <pre id="ten_data_ids"></pre>
+
+    <h2>open deposition</h2>
+    <pre id="open_deposition"></pre>
+
+    <h2>
+      close deposition number:
+      <span id="close_deposition_number" style="color: red"></span>
+    </h2>
+    <pre id="close_deposition"></pre>
+
+    <script>
+        let current_page=1;
+      let total_page = 1;
+      async function load(page_number) {
+        try {
+          const data = await fetch(
+            `http://localhost:8010/api/managed-records/${page_number}`
+          );
+
+          const json_data = await data.json();
+          
+          if(json_data){
+            console.log(json_data)
+
+          
+          temp_total_page=Math.ceil(json_data.count/10);
+          console.log(temp_total_page)
+          if (temp_total_page && temp_total_page>total_page){
+            total_page=temp_total_page
+          }
+          
+          const records = json_data.data;
+          const top_data = records.filter((v,index) => {
+            return index<10
+          });
+          document.getElementById("ten_data").textContent = JSON.stringify(
+            top_data,
+            undefined,
+            2
+          );
+          console.log(top_data);
+
+          const allId = top_data.map((v) => {
+            return v.id;
+          });
+          document.getElementById("ten_data_ids").textContent = JSON.stringify(
+            allId,
+            undefined,
+            2
+          );
+          console.log(allId);
+
+          const openDeposion = top_data.filter((v) => {
+            return v.disposition == "open";
+          });
+          document.getElementById("open_deposition").textContent =
+            JSON.stringify(openDeposion, undefined, 2);
+          console.log(openDeposion);
+
+          const closeDeposion = top_data.filter((v) => {
+            return (
+              v.disposition == "closed" &&
+              (v.color == "red" || v.color == "blue" || v.color == "green")
+            );
+          });
+          document.getElementById("close_deposition").textContent =
+            JSON.stringify(closeDeposion, undefined, 2);
+          document.getElementById("close_deposition_number").innerHTML =
+            closeDeposion.length;
+
+          console.log(closeDeposion);
+          console.log(
+            "close deposition with primary color " + closeDeposion.length
+          );
+        }} catch (err) {
+          console.log(err);
+        }
+      }
+      async function prev(){
+
+        if (current_page - 1 > 0 ){
+            current_page=current_page-1
+        }
+        else{
+            alert("page number can not be less than 0")
+        }
+        
+      }
+      async function next(){
+          console.log("calling next")
+        if (current_page + 1 <= total_page ){
+            current_page=current_page+1
+
+            await load(current_page)
+        }
+        else{
+            alert("page number can not be gretter than "+ total_page)
+        }
+      }
+      async function onload() {
+        await load(1);
+      }
+      onload();
+    </script>
+  </body>
+</html>
